@@ -9,12 +9,13 @@ interface CodeViewProps {
   isDebugMode: boolean
   executionState: ExecutionState
   config: OptimizerConfig
+  isStacked?: boolean
 }
 
-export function CodeView({ generateCode, isDebugMode, executionState, config }: CodeViewProps) {
+export function CodeView({ generateCode, isDebugMode, executionState, config, isStacked = false }: CodeViewProps) {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-      <div className="md:col-span-2 bg-muted/20 rounded-lg overflow-hidden border border-border/50">
+    <div className={cn("grid gap-4", isStacked ? "grid-cols-1" : "grid-cols-1 md:grid-cols-3")}>
+      <div className={cn("bg-muted/20 rounded-lg overflow-hidden border border-border/50", isStacked ? "" : "md:col-span-2")}>
         <div className="bg-muted/50 px-4 py-2 border-b border-border/50 flex justify-between items-center">
           <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Source Code</span>
           {isDebugMode && (

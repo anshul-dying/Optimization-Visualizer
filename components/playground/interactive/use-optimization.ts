@@ -14,6 +14,8 @@ export function useOptimization(
   const [loss, setLoss] = useState(0)
   const [isDebugMode, setIsDebugMode] = useState(false)
   const [stepDelay, setStepDelay] = useState(200)
+  const [zoom, setZoom] = useState(1)
+  const [panOffset, setPanOffset] = useState<Point>({ x: 0, y: 0 })
   const [executionState, setExecutionState] = useState<ExecutionState>({
     activeLine: -1,
     variables: {},
@@ -72,6 +74,8 @@ export function useOptimization(
     setPath([{ x: 2, y: 2 }])
     setIteration(0)
     iterationRef.current = 0
+    setZoom(1)
+    setPanOffset({ x: 0, y: 0 })
     setExecutionState({ activeLine: -1, variables: {} })
     activeLineRef.current = -1
     executionVariablesRef.current = {}
@@ -83,6 +87,11 @@ export function useOptimization(
     if (animationRef.current) {
       cancelAnimationFrame(animationRef.current)
     }
+  }, [])
+
+  const resetView = useCallback(() => {
+    setZoom(1)
+    setPanOffset({ x: 0, y: 0 })
   }, [])
 
   const optimizationStep = useCallback(() => {
@@ -354,9 +363,11 @@ export function useOptimization(
     const scaleY = canvas.height / rect.height
     const x_px = (e.clientX - rect.left) * scaleX
     const y_px = (e.clientY - rect.top) * scaleY
-    const scale = 50
-    const offsetX = canvas.width / 2
-    const offsetY = canvas.height / 2
+    
+    const scale = 50 * zoom
+    const offsetX = (canvas.width / 2) + panOffset.x
+    const offsetY = (canvas.height / 2) + panOffset.y
+    
     const dataX = (x_px - offsetX) / scale
     const dataY = (y_px - offsetY) / scale
     const newPoint = { x: dataX, y: dataY }
@@ -371,7 +382,7 @@ export function useOptimization(
     adamVRef.current = { x: 0, y: 0 }
     adagradGRef.current = { x: 0, y: 0 }
     rmspropGRef.current = { x: 0, y: 0 }
-  }, [isRunning, selectedFunction])
+  }, [isRunning, selectedFunction, zoom, panOffset])
 
   return {
     isRunning,
@@ -383,6 +394,11 @@ export function useOptimization(
     setIsDebugMode,
     stepDelay,
     setStepDelay,
+    zoom,
+    setZoom,
+    panOffset,
+    setPanOffset,
+    resetView,
     executionState,
     toggleAnimation,
     reset,
