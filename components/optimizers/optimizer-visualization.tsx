@@ -86,6 +86,12 @@ export function OptimizerVisualization({ type }: OptimizerVisualizationProps) {
       case "adam":
         drawAdam(ctx, centerX, centerY, step)
         break
+      case "rmsprop":
+        drawRMSprop(ctx, centerX, centerY, step)
+        break
+      case "adagrad":
+        drawAdaGrad(ctx, centerX, centerY, step)
+        break
       case "analytical":
         drawAnalytical(ctx, centerX, centerY, step)
         break
@@ -183,6 +189,49 @@ export function OptimizerVisualization({ type }: OptimizerVisualizationProps) {
     ctx.fillStyle = "#f97316"
     ctx.beginPath()
     ctx.arc(adaptiveX, adaptiveY, 4 + Math.sin(step * 4) * 2, 0, 2 * Math.PI)
+    ctx.fill()
+  }
+
+  const drawRMSprop = (ctx: CanvasRenderingContext2D, cx: number, cy: number, step: number) => {
+    // Smoother path than SGD, adapts to curvature
+    ctx.strokeStyle = "#facc15" // Yellow-400
+    ctx.lineWidth = 2
+    ctx.beginPath()
+    for (let i = 0; i < 70; i++) {
+      const x = cx - 85 + i * 2.4
+      const y = cy + 40 - i * 1.1 + Math.sin(step + i * 0.2) * 2
+      if (i === 0) ctx.moveTo(x, y)
+      else ctx.lineTo(x, y)
+    }
+    ctx.stroke()
+
+    // Oscillating particle reflecting decay
+    const pulse = 4 + Math.sin(step * 5) * 2
+    ctx.fillStyle = "#facc15"
+    ctx.beginPath()
+    ctx.arc(cx + Math.sin(step * 2) * 30, cy + Math.cos(step * 1.5) * 25, pulse, 0, 2 * Math.PI)
+    ctx.fill()
+  }
+
+  const drawAdaGrad = (ctx: CanvasRenderingContext2D, cx: number, cy: number, step: number) => {
+    // Path that slows down over time
+    ctx.strokeStyle = "#2dd4bf" // Teal-400
+    ctx.lineWidth = 2
+    ctx.beginPath()
+    for (let i = 0; i < 90; i++) {
+      const slowdown = Math.max(0.1, 1 - i * 0.01)
+      const x = cx - 95 + i * 2.1 * slowdown
+      const y = cy + 45 - i * 1.0 * slowdown + Math.sin(step + i * 0.1) * 2
+      if (i === 0) ctx.moveTo(x, y)
+      else ctx.lineTo(x, y)
+    }
+    ctx.stroke()
+
+    // Shrinking particle reflecting decreasing LR
+    const size = Math.max(1, 5 - (step % (2 * Math.PI)) * 0.5)
+    ctx.fillStyle = "#2dd4bf"
+    ctx.beginPath()
+    ctx.arc(cx + 40, cy - 20, size, 0, 2 * Math.PI)
     ctx.fill()
   }
 

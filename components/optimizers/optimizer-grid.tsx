@@ -3,7 +3,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { OptimizerVisualization } from "@/components/optimizer-visualization"
+import { OptimizerVisualization } from "@/components/optimizers/optimizer-visualization"
 import { Play, BarChart3, Cpu, Zap, Target, TrendingUp, ExternalLink } from "lucide-react"
 
 const optimizers = [
@@ -78,6 +78,40 @@ const optimizers = [
       </math>
     ),
     useCases: ["Neural networks", "Sparse gradients", "Non-stationary objectives"],
+  },
+  {
+    id: "rmsprop",
+    name: "RMSprop",
+    description: "Root Mean Square Propagation with adaptive learning rate",
+    complexity: "O(n)",
+    convergence: "Fast",
+    icon: Zap,
+    color: "from-yellow-400 to-orange-400",
+    features: ["Adaptive", "Decaying Average", "Non-convex"],
+    formula: "θ = θ - α·g/√(E[g²] + ε)",
+    mathml: (
+      <math>
+        <mi>θ</mi><mo>&#x2190;</mo><mi>θ</mi><mo>&#x2212;</mo><mfrac><mi>α</mi><mrow><msqrt><mi>E</mi><mo>[</mo><msup><mi>g</mi><mn>2</mn></msup><mo>]</mo></msqrt><mo>+</mo><mi>ε</mi></mrow></mfrac><mo>&#x22C5;</mo><mi>g</mi>
+      </math>
+    ),
+    useCases: ["Recurrent Neural Networks", "Non-stationary objectives", "Deep Learning"],
+  },
+  {
+    id: "adagrad",
+    name: "AdaGrad",
+    description: "Adaptive gradient algorithm with per-parameter learning rate",
+    complexity: "O(n)",
+    convergence: "Fast (early)",
+    icon: Target,
+    color: "from-teal-400 to-emerald-400",
+    features: ["Per-parameter LR", "Sparse Data", "No LR tuning"],
+    formula: "θ = θ - α·g/√(G + ε)",
+    mathml: (
+      <math>
+        <mi>θ</mi><mo>&#x2190;</mo><mi>θ</mi><mo>&#x2212;</mo><mfrac><mi>α</mi><mrow><msqrt><msub><mi>G</mi><mi>t</mi></msub></msqrt><mo>+</mo><mi>ε</mi></mrow></mfrac><mo>&#x22C5;</mo><mi>g</mi>
+      </math>
+    ),
+    useCases: ["Natural Language Processing", "Sparse features", "Computer Vision"],
   },
   {
     id: "analytical",
