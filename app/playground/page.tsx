@@ -1,5 +1,5 @@
 import { Header } from "@/components/layout/header"
-import { MLPlayground } from "@/components/playground/ml-playground"
+import { MLPlayground } from "@/components/playground/ml"
 import { Footer } from "@/components/layout/footer"
 
 export default function PlaygroundPage() {

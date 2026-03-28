@@ -89,7 +89,7 @@ export function AdvancedMetrics() {
               </CardHeader>
               <CardContent>
                 <div className="h-80">
-                  <ResponsiveContainer width="100%" height="100%">
+                  <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                     <LineChart data={convergenceRates}>
                       <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                       <XAxis dataKey="iteration" stroke="var(--muted-foreground)" />
@@ -127,7 +127,7 @@ export function AdvancedMetrics() {
               </CardHeader>
               <CardContent>
                 <div className="h-80">
-                  <ResponsiveContainer width="100%" height="100%">
+                  <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                     <RadarChart data={performanceMetrics}>
                       <PolarGrid stroke="var(--border)" />
                       <PolarAngleAxis
@@ -184,7 +184,7 @@ export function AdvancedMetrics() {
               </CardHeader>
               <CardContent>
                 <div className="h-80">
-                  <ResponsiveContainer width="100%" height="100%">
+                  <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                     <ScatterChart data={complexityAnalysis}>
                       <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                       <XAxis
