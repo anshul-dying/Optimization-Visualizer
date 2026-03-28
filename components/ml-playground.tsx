@@ -461,10 +461,10 @@ export function MLPlayground() {
           
           // Draw confidence regions for classification
           if (config.algorithm === "logistic") {
-            ctx.globalAlpha = 0.1
-            ctx.fillStyle = "#ef4444"
+            ctx.globalAlpha = resolvedTheme === "dark" ? 0.2 : 0.15
+            ctx.fillStyle = "#ef4444" // Red (Class 1)
             ctx.fillRect(0, 0, canvas.width, canvasY1 + (canvasY2 - canvasY1) * 0.5)
-            ctx.fillStyle = "#3b82f6"
+            ctx.fillStyle = "#3b82f6" // Blue (Class 0)
             ctx.fillRect(0, canvasY1 + (canvasY2 - canvasY1) * 0.5, canvas.width, canvas.height)
             ctx.globalAlpha = 1.0
           }
@@ -472,13 +472,19 @@ export function MLPlayground() {
       } else if (boundaryData && boundaryData.length > 0) {
         const resolution = 50
         const gridSize = canvas.width / resolution
-        ctx.globalAlpha = 0.3
+        
+        // Use a softer, more sophisticated opacity
+        ctx.globalAlpha = resolvedTheme === "dark" ? 0.35 : 0.2
         
         for (let i = 0; i < resolution; i++) {
           for (let j = 0; j < resolution; j++) {
             const prediction = boundaryData[i][j]
+            
+            // Refined Palette: Softer Red and Blue
             ctx.fillStyle = prediction === 1 ? "#ef4444" : "#3b82f6"
-            ctx.fillRect(i * gridSize, j * gridSize, gridSize, gridSize)
+            
+            // Add a very subtle "mesh" effect or slight overlap for smoothness
+            ctx.fillRect(i * gridSize, j * gridSize, gridSize + 0.5, gridSize + 0.5)
           }
         }
         ctx.globalAlpha = 1.0

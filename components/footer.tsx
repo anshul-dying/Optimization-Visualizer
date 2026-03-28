@@ -1,4 +1,5 @@
 import { Github, BookOpen, Mail } from "lucide-react"
+import Link from "next/link"
 
 export function Footer() {
   return (
@@ -10,7 +11,7 @@ export function Footer() {
               <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
                 <span className="text-primary-foreground font-bold text-sm">ML</span>
               </div>
-              <span className="font-bold text-xl">OptimizerViz</span>
+              <span className="font-bold text-xl">Modulus</span>
             </div>
             <p className="text-sm text-muted-foreground">
               Interactive visualization platform for understanding machine learning optimization algorithms.
@@ -47,14 +48,14 @@ export function Footer() {
             <h3 className="font-semibold mb-4">Resources</h3>
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li>
-                <a href="#" className="hover:text-foreground transition-colors">
+                <Link href="/docs" className="hover:text-foreground transition-colors">
                   Documentation
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="#" className="hover:text-foreground transition-colors">
+                <Link href="/docs/backend" className="hover:text-foreground transition-colors">
                   API Reference
-                </a>
+                </Link>
               </li>
               <li>
                 <a href="#" className="hover:text-foreground transition-colors">
@@ -72,13 +73,13 @@ export function Footer() {
           <div>
             <h3 className="font-semibold mb-4">Connect</h3>
             <div className="flex gap-4">
-              <a href="#" className="text-muted-foreground hover:text-foreground transition-colors">
+              <a href="https://github.com/anshul-dying/Optimization-Visualizer" target="_blank" className="text-muted-foreground hover:text-foreground transition-colors">
                 <Github className="w-5 h-5" />
               </a>
-              <a href="#" className="text-muted-foreground hover:text-foreground transition-colors">
+              <a href="#" target="_blank" className="text-muted-foreground hover:text-foreground transition-colors">
                 <BookOpen className="w-5 h-5" />
               </a>
-              <a href="#" className="text-muted-foreground hover:text-foreground transition-colors">
+              <a href="mailto:anshulkhaire3303dll@gmail.com" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-foreground transition-colors">
                 <Mail className="w-5 h-5" />
               </a>
             </div>
@@ -86,7 +87,7 @@ export function Footer() {
         </div>
 
         <div className="border-t border-border mt-8 pt-8 text-center text-sm text-muted-foreground">
-          <p>&copy; 2025 ML OptimizerViz. Built for educational purposes.</p>
+          <p>&copy; 2026 Modulus. Built for educational purposes.</p>
         </div>
       </div>
     </footer>

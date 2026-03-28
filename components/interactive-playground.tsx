@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Slider } from "@/components/ui/slider"
+import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -196,6 +197,43 @@ export function InteractivePlayground() {
     }
   }
 
+  const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (isRunning) return
+    
+    const canvas = canvasRef.current
+    if (!canvas) return
+    
+    const rect = canvas.getBoundingClientRect()
+    
+    // Calculate the ratio between the internal canvas size and its displayed size
+    const scaleX = canvas.width / rect.width
+    const scaleY = canvas.height / rect.height
+    
+    // Map click coordinates to internal canvas space
+    const x_px = (e.clientX - rect.left) * scaleX
+    const y_px = (e.clientY - rect.top) * scaleY
+    
+    const scale = 50
+    const offsetX = canvas.width / 2
+    const offsetY = canvas.height / 2
+    
+    const dataX = (x_px - offsetX) / scale
+    const dataY = (y_px - offsetY) / scale
+    
+    const newPoint = { x: dataX, y: dataY }
+    setCurrentPoint(newPoint)
+    currentPointRef.current = newPoint
+    setPath([newPoint])
+    setIteration(0)
+    iterationRef.current = 0
+    setLoss(objectiveFunctions[selectedFunction](dataX, dataY))
+    
+    // Reset optimizer states
+    momentumRef.current = { x: 0, y: 0 }
+    adamMRef.current = { x: 0, y: 0 }
+    adamVRef.current = { x: 0, y: 0 }
+  }
+
   const drawVisualization = () => {
     const canvas = canvasRef.current
     if (!canvas) return
@@ -213,56 +251,97 @@ export function InteractivePlayground() {
     const offsetX = canvas.width / 2
     const offsetY = canvas.height / 2
 
-    // Create contour map
-    for (let i = 0; i < canvas.width; i += 4) {
-      for (let j = 0; j < canvas.height; j += 4) {
+    // Create a smoother, more "premium" contour map
+    const resolution = 4
+    for (let i = 0; i < canvas.width; i += resolution) {
+      for (let j = 0; j < canvas.height; j += resolution) {
         const x = (i - offsetX) / scale
         const y = (j - offsetY) / scale
         const value = objectiveFunctions[selectedFunction](x, y)
-        const intensity = Math.min(255, Math.max(0, 255 - Math.log(value + 1) * 30))
-        ctx.fillStyle = `rgba(99, 102, 241, ${0.1 + ((255 - intensity) / 255) * 0.3})`
-        ctx.fillRect(i, j, 4, 4)
+        
+        // Vivid multi-stop color mapping for maximum "depth" visibility
+        // Squish the log range to make the gradient very aggressive
+        const normalizedValue = Math.min(1, Math.log10(value + 1) / 2)
+        
+        let r, g, b
+        if (normalizedValue < 0.5) {
+          // Valleys to Slopes: Deep Navy (15, 23, 42) to Indigo (99, 102, 241)
+          const t = normalizedValue * 2
+          r = 15 + t * (99 - 15)
+          g = 23 + t * (102 - 23)
+          b = 42 + t * (241 - 42)
+        } else {
+          // Slopes to Peaks: Indigo (99, 102, 241) to Bright Cyan (34, 211, 238) or Magenta
+          const t = (normalizedValue - 0.5) * 2
+          r = 99 + t * (34 - 99)
+          g = 102 + t * (211 - 102)
+          b = 241 + t * (238 - 241)
+        }
+        
+        // High opacity to prevent background camouflage
+        const alpha = resolvedTheme === "dark" ? 0.4 + normalizedValue * 0.4 : 0.3 + normalizedValue * 0.3
+        
+        ctx.fillStyle = `rgba(${Math.floor(r)}, ${Math.floor(g)}, ${Math.floor(b)}, ${alpha})`
+        ctx.fillRect(i, j, resolution, resolution)
+        
+        // Sharper topographical lines for structural definition
+        const logValue = Math.log(value + 1)
+        if (Math.abs((logValue * 1.5) % 1) < 0.07) {
+          ctx.fillStyle = resolvedTheme === "dark" ? "rgba(255, 255, 255, 0.2)" : "rgba(255, 255, 255, 0.4)"
+          ctx.fillRect(i, j, resolution, resolution)
+        }
       }
     }
 
-    // Draw optimization path
+    // Draw optimization path with a "glow" effect
     if (path.length > 1) {
+      // Draw shadow/glow first
+      ctx.shadowBlur = 15
+      ctx.shadowColor = "rgba(249, 115, 22, 0.4)"
       ctx.strokeStyle = "#f97316"
-      ctx.lineWidth = 2
+      ctx.lineWidth = 3
+      ctx.lineJoin = "round"
+      ctx.lineCap = "round"
       ctx.beginPath()
 
       for (let i = 0; i < path.length; i++) {
         const x = path[i].x * scale + offsetX
         const y = path[i].y * scale + offsetY
-
-        if (i === 0) {
-          ctx.moveTo(x, y)
-        } else {
-          ctx.lineTo(x, y)
-        }
+        if (i === 0) ctx.moveTo(x, y)
+        else ctx.lineTo(x, y)
       }
       ctx.stroke()
+      
+      // Reset shadow for the rest
+      ctx.shadowBlur = 0
 
-      // Draw path points
+      // Draw path points with variable opacity and scale
       path.forEach((point, index) => {
         const x = point.x * scale + offsetX
         const y = point.y * scale + offsetY
-        const alpha = Math.max(0.2, index / path.length)
+        const progress = index / path.length
+        const alpha = 0.2 + progress * 0.6
+        const radius = 2 + progress * 2
 
         ctx.fillStyle = `rgba(249, 115, 22, ${alpha})`
         ctx.beginPath()
-        ctx.arc(x, y, 3, 0, 2 * Math.PI)
+        ctx.arc(x, y, radius, 0, 2 * Math.PI)
         ctx.fill()
       })
     }
 
-    // Draw current point
+    // Draw current point with a stable, glowing effect
     const currentX = currentPoint.x * scale + offsetX
     const currentY = currentPoint.y * scale + offsetY
+    
+    // Static high-quality glow
+    ctx.shadowBlur = 15
+    ctx.shadowColor = "rgba(239, 68, 68, 0.5)"
     ctx.fillStyle = "#ef4444"
     ctx.beginPath()
     ctx.arc(currentX, currentY, 6, 0, 2 * Math.PI)
     ctx.fill()
+    ctx.shadowBlur = 0
 
     // Draw axes
     ctx.strokeStyle = resolvedTheme === "dark" ? "rgba(255, 255, 255, 0.3)" : "rgba(0, 0, 0, 0.3)"
@@ -367,7 +446,16 @@ def adam_step(x, y, m, v, t, lr=${config.learningRate}, beta1=${config.beta1}, b
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium">Learning Rate: {config.learningRate}</label>
+                <div className="flex justify-between items-center">
+                  <label className="text-sm font-medium">Learning Rate</label>
+                  <Input 
+                    type="number" 
+                    className="w-20 h-8 text-xs"
+                    step="0.0001"
+                    value={config.learningRate}
+                    onChange={(e) => setConfig(prev => ({ ...prev, learningRate: parseFloat(e.target.value) || 0 }))}
+                  />
+                </div>
                 <Slider
                   value={[config.learningRate]}
                   onValueChange={([value]) => setConfig((prev) => ({ ...prev, learningRate: value }))}
@@ -379,7 +467,16 @@ def adam_step(x, y, m, v, t, lr=${config.learningRate}, beta1=${config.beta1}, b
 
               {selectedOptimizer === "momentum" && (
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Momentum: {config.momentum}</label>
+                  <div className="flex justify-between items-center">
+                    <label className="text-sm font-medium">Momentum</label>
+                    <Input 
+                      type="number" 
+                      className="w-20 h-8 text-xs"
+                      step="0.01"
+                      value={config.momentum || 0.9}
+                      onChange={(e) => setConfig(prev => ({ ...prev, momentum: parseFloat(e.target.value) || 0 }))}
+                    />
+                  </div>
                   <Slider
                     value={[config.momentum || 0.9]}
                     onValueChange={([value]) => setConfig((prev) => ({ ...prev, momentum: value }))}
@@ -393,7 +490,16 @@ def adam_step(x, y, m, v, t, lr=${config.learningRate}, beta1=${config.beta1}, b
               {selectedOptimizer === "adam" && (
                 <>
                   <div className="space-y-2">
-                    <label className="text-sm font-medium">Beta1: {config.beta1}</label>
+                    <div className="flex justify-between items-center">
+                      <label className="text-sm font-medium">Beta1</label>
+                      <Input 
+                        type="number" 
+                        className="w-20 h-8 text-xs"
+                        step="0.01"
+                        value={config.beta1 || 0.9}
+                        onChange={(e) => setConfig(prev => ({ ...prev, beta1: parseFloat(e.target.value) || 0 }))}
+                      />
+                    </div>
                     <Slider
                       value={[config.beta1 || 0.9]}
                       onValueChange={([value]) => setConfig((prev) => ({ ...prev, beta1: value }))}
@@ -403,7 +509,16 @@ def adam_step(x, y, m, v, t, lr=${config.learningRate}, beta1=${config.beta1}, b
                     />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-sm font-medium">Beta2: {config.beta2}</label>
+                    <div className="flex justify-between items-center">
+                      <label className="text-sm font-medium">Beta2</label>
+                      <Input 
+                        type="number" 
+                        className="w-20 h-8 text-xs"
+                        step="0.001"
+                        value={config.beta2 || 0.999}
+                        onChange={(e) => setConfig(prev => ({ ...prev, beta2: parseFloat(e.target.value) || 0 }))}
+                      />
+                    </div>
                     <Slider
                       value={[config.beta2 || 0.999]}
                       onValueChange={([value]) => setConfig((prev) => ({ ...prev, beta2: value }))}
@@ -458,12 +573,18 @@ def adam_step(x, y, m, v, t, lr=${config.learningRate}, beta1=${config.beta1}, b
                 </TabsList>
 
                 <TabsContent value="visualization" className="mt-4">
-                  <div className="bg-muted/20 rounded-lg p-4">
+                  <div className="bg-muted/20 rounded-lg p-4 relative cursor-crosshair group">
                     <canvas
                       ref={canvasRef}
-                      className="w-full h-auto border rounded"
+                      onClick={handleCanvasClick}
+                      className="w-full h-auto border rounded bg-background/50"
                       style={{ maxWidth: "100%", height: "400px" }}
                     />
+                    {!isRunning && (
+                      <div className="absolute top-8 left-1/2 -translate-x-1/2 bg-primary/90 text-primary-foreground px-3 py-1 rounded-full text-xs font-medium opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
+                        Click anywhere to set starting point
+                      </div>
+                    )}
                   </div>
                 </TabsContent>
 

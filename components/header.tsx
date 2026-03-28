@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button"
 import { Github, Play } from "lucide-react"
 import { ModeToggle } from "@/components/mode-toggle"
+import Link from "next/link"
 
 export function Header() {
   return (
@@ -11,7 +12,7 @@ export function Header() {
             <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
               <span className="text-primary-foreground font-bold text-sm">ML</span>
             </div>
-            <span className="font-bold text-xl text-foreground">OptimizerViz</span>
+            <span className="font-bold text-xl text-foreground">Modulus</span>
           </div>
 
           <nav className="hidden md:flex items-center gap-6">
@@ -27,9 +28,9 @@ export function Header() {
             <a href="/playground" className="text-muted-foreground hover:text-foreground transition-colors">
               ML Playground
             </a>
-            <a href="/#docs" className="text-muted-foreground hover:text-foreground transition-colors">
+            <Link href="/docs" className="text-muted-foreground hover:text-foreground transition-colors">
               Documentation
-            </a>
+            </Link>
           </nav>
 
           <div className="flex items-center gap-2">
