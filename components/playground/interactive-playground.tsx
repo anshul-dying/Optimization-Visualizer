@@ -60,10 +60,11 @@ export function InteractivePlayground() {
   const animationRef = useRef<number | null>(null)
   const currentPointRef = useRef<Point>(currentPoint)
   const iterationRef = useRef<number>(iteration)
-  const velocityRef = useRef<Point>({ x: 0, y: 0 })
   const momentumRef = useRef<Point>({ x: 0, y: 0 })
   const adamMRef = useRef<Point>({ x: 0, y: 0 })
   const adamVRef = useRef<Point>({ x: 0, y: 0 })
+  const adagradGRef = useRef<Point>({ x: 0, y: 0 })
+  const rmspropGRef = useRef<Point>({ x: 0, y: 0 })
 
   useEffect(() => {
     setConfig(optimizerConfigs[selectedOptimizer])
@@ -78,8 +79,6 @@ export function InteractivePlayground() {
     isRunningRef.current = isRunning
   }, [isRunning])
 
-  // Keep refs for currentPoint and iteration in sync so the rAF loop
-  // reads the latest values instead of stale closures.
   useEffect(() => {
     currentPointRef.current = currentPoint
   }, [currentPoint])
@@ -96,10 +95,11 @@ export function InteractivePlayground() {
     setPath([{ x: 2, y: 2 }])
     setIteration(0)
     iterationRef.current = 0
-    velocityRef.current = { x: 0, y: 0 }
     momentumRef.current = { x: 0, y: 0 }
     adamMRef.current = { x: 0, y: 0 }
     adamVRef.current = { x: 0, y: 0 }
+    adagradGRef.current = { x: 0, y: 0 }
+    rmspropGRef.current = { x: 0, y: 0 }
     if (animationRef.current) {
       cancelAnimationFrame(animationRef.current)
     }
@@ -116,8 +116,6 @@ export function InteractivePlayground() {
   }
 
   const optimizationStep = () => {
-    // Read latest values from refs to avoid stale closure issues when
-    // this function is invoked from the rAF callback.
     const cp = currentPointRef.current
     const grad = computeGradient(cp.x, cp.y, selectedFunction)
     const newPoint = { ...cp }
@@ -129,7 +127,6 @@ export function InteractivePlayground() {
         break
 
       case "sgd":
-        // Add noise for SGD
         const noiseX = (Math.random() - 0.5) * 0.1
         const noiseY = (Math.random() - 0.5) * 0.1
         newPoint.x -= config.learningRate * (grad.x + noiseX)
@@ -163,15 +160,30 @@ export function InteractivePlayground() {
         newPoint.x -= (config.learningRate * mHatX) / (Math.sqrt(vHatX) + eps)
         newPoint.y -= (config.learningRate * mHatY) / (Math.sqrt(vHatY) + eps)
         break
+
+      case "rmsprop":
+        const betaDecay = config.momentum || 0.9
+        const epsR = config.epsilon || 1e-8
+        rmspropGRef.current.x = betaDecay * rmspropGRef.current.x + (1 - betaDecay) * grad.x * grad.x
+        rmspropGRef.current.y = betaDecay * rmspropGRef.current.y + (1 - betaDecay) * grad.y * grad.y
+        newPoint.x -= (config.learningRate * grad.x) / (Math.sqrt(rmspropGRef.current.x) + epsR)
+        newPoint.y -= (config.learningRate * grad.y) / (Math.sqrt(rmspropGRef.current.y) + epsR)
+        break
+
+      case "adagrad":
+        const epsA = config.epsilon || 1e-8
+        adagradGRef.current.x += grad.x * grad.x
+        adagradGRef.current.y += grad.y * grad.y
+        newPoint.x -= (config.learningRate * grad.x) / (Math.sqrt(adagradGRef.current.x) + epsA)
+        newPoint.y -= (config.learningRate * grad.y) / (Math.sqrt(adagradGRef.current.y) + epsA)
+        break
     }
 
-    // Update refs first so subsequent rAF calls see the latest values.
     currentPointRef.current = newPoint
     iterationRef.current = iterationRef.current + 1
 
-    // Update React state so UI reflects the changes
     setCurrentPoint(newPoint)
-    setPath((prev) => [...prev.slice(-100), newPoint]) // Keep last 100 points
+    setPath((prev) => [...prev.slice(-100), newPoint])
     setIteration((prev) => prev + 1)
     setLoss(objectiveFunctions[selectedFunction](newPoint.x, newPoint.y))
   }
@@ -179,7 +191,6 @@ export function InteractivePlayground() {
   const animate = () => {
     if (isRunningRef.current) {
       optimizationStep()
-      console.log("Next Step..")
       animationRef.current = requestAnimationFrame(animate)
     }
   }
@@ -192,34 +203,24 @@ export function InteractivePlayground() {
       }
     } else {
       setIsRunning(true)
-      console.log("Setting Running true");
       animationRef.current = requestAnimationFrame(animate)
     }
   }
 
   const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (isRunning) return
-    
     const canvas = canvasRef.current
     if (!canvas) return
-    
     const rect = canvas.getBoundingClientRect()
-    
-    // Calculate the ratio between the internal canvas size and its displayed size
     const scaleX = canvas.width / rect.width
     const scaleY = canvas.height / rect.height
-    
-    // Map click coordinates to internal canvas space
     const x_px = (e.clientX - rect.left) * scaleX
     const y_px = (e.clientY - rect.top) * scaleY
-    
     const scale = 50
     const offsetX = canvas.width / 2
     const offsetY = canvas.height / 2
-    
     const dataX = (x_px - offsetX) / scale
     const dataY = (y_px - offsetY) / scale
-    
     const newPoint = { x: dataX, y: dataY }
     setCurrentPoint(newPoint)
     currentPointRef.current = newPoint
@@ -227,64 +228,46 @@ export function InteractivePlayground() {
     setIteration(0)
     iterationRef.current = 0
     setLoss(objectiveFunctions[selectedFunction](dataX, dataY))
-    
-    // Reset optimizer states
     momentumRef.current = { x: 0, y: 0 }
     adamMRef.current = { x: 0, y: 0 }
     adamVRef.current = { x: 0, y: 0 }
+    adagradGRef.current = { x: 0, y: 0 }
+    rmspropGRef.current = { x: 0, y: 0 }
   }
 
   const drawVisualization = () => {
     const canvas = canvasRef.current
     if (!canvas) return
-
     const ctx = canvas.getContext("2d")
     if (!ctx) return
-
     canvas.width = 600
     canvas.height = 400
-
     ctx.clearRect(0, 0, canvas.width, canvas.height)
-
-    // Draw contour lines
     const scale = 50
     const offsetX = canvas.width / 2
     const offsetY = canvas.height / 2
-
-    // Create a smoother, more "premium" contour map
     const resolution = 4
     for (let i = 0; i < canvas.width; i += resolution) {
       for (let j = 0; j < canvas.height; j += resolution) {
         const x = (i - offsetX) / scale
         const y = (j - offsetY) / scale
         const value = objectiveFunctions[selectedFunction](x, y)
-        
-        // Vivid multi-stop color mapping for maximum "depth" visibility
-        // Squish the log range to make the gradient very aggressive
         const normalizedValue = Math.min(1, Math.log10(value + 1) / 2)
-        
         let r, g, b
         if (normalizedValue < 0.5) {
-          // Valleys to Slopes: Deep Navy (15, 23, 42) to Indigo (99, 102, 241)
           const t = normalizedValue * 2
           r = 15 + t * (99 - 15)
           g = 23 + t * (102 - 23)
           b = 42 + t * (241 - 42)
         } else {
-          // Slopes to Peaks: Indigo (99, 102, 241) to Bright Cyan (34, 211, 238) or Magenta
           const t = (normalizedValue - 0.5) * 2
           r = 99 + t * (34 - 99)
           g = 102 + t * (211 - 102)
           b = 241 + t * (238 - 241)
         }
-        
-        // High opacity to prevent background camouflage
         const alpha = resolvedTheme === "dark" ? 0.4 + normalizedValue * 0.4 : 0.3 + normalizedValue * 0.3
-        
         ctx.fillStyle = `rgba(${Math.floor(r)}, ${Math.floor(g)}, ${Math.floor(b)}, ${alpha})`
         ctx.fillRect(i, j, resolution, resolution)
-        
-        // Sharper topographical lines for structural definition
         const logValue = Math.log(value + 1)
         if (Math.abs((logValue * 1.5) % 1) < 0.07) {
           ctx.fillStyle = resolvedTheme === "dark" ? "rgba(255, 255, 255, 0.2)" : "rgba(255, 255, 255, 0.4)"
@@ -292,10 +275,7 @@ export function InteractivePlayground() {
         }
       }
     }
-
-    // Draw optimization path with a "glow" effect
     if (path.length > 1) {
-      // Draw shadow/glow first
       ctx.shadowBlur = 15
       ctx.shadowColor = "rgba(249, 115, 22, 0.4)"
       ctx.strokeStyle = "#f97316"
@@ -303,7 +283,6 @@ export function InteractivePlayground() {
       ctx.lineJoin = "round"
       ctx.lineCap = "round"
       ctx.beginPath()
-
       for (let i = 0; i < path.length; i++) {
         const x = path[i].x * scale + offsetX
         const y = path[i].y * scale + offsetY
@@ -311,30 +290,21 @@ export function InteractivePlayground() {
         else ctx.lineTo(x, y)
       }
       ctx.stroke()
-      
-      // Reset shadow for the rest
       ctx.shadowBlur = 0
-
-      // Draw path points with variable opacity and scale
       path.forEach((point, index) => {
         const x = point.x * scale + offsetX
         const y = point.y * scale + offsetY
         const progress = index / path.length
         const alpha = 0.2 + progress * 0.6
         const radius = 2 + progress * 2
-
         ctx.fillStyle = `rgba(249, 115, 22, ${alpha})`
         ctx.beginPath()
         ctx.arc(x, y, radius, 0, 2 * Math.PI)
         ctx.fill()
       })
     }
-
-    // Draw current point with a stable, glowing effect
     const currentX = currentPoint.x * scale + offsetX
     const currentY = currentPoint.y * scale + offsetY
-    
-    // Static high-quality glow
     ctx.shadowBlur = 15
     ctx.shadowColor = "rgba(239, 68, 68, 0.5)"
     ctx.fillStyle = "#ef4444"
@@ -342,8 +312,6 @@ export function InteractivePlayground() {
     ctx.arc(currentX, currentY, 6, 0, 2 * Math.PI)
     ctx.fill()
     ctx.shadowBlur = 0
-
-    // Draw axes
     ctx.strokeStyle = resolvedTheme === "dark" ? "rgba(255, 255, 255, 0.3)" : "rgba(0, 0, 0, 0.3)"
     ctx.lineWidth = 1
     ctx.beginPath()
@@ -363,8 +331,30 @@ def gradient_descent(x, y, lr=${config.learningRate}):
     y -= lr * grad_y
     return x, y`,
 
+      sgd: `# Stochastic Gradient Descent
+def sgd_step(x, y, lr=${config.learningRate}):
+    # In practice, compute gradient on a single random sample
+    grad_x, grad_y = compute_gradient(x, y)
+    
+    # Add noise to simulate stochastic nature
+    noise = np.random.normal(0, 0.1, 2)
+    x -= lr * (grad_x + noise[0])
+    y -= lr * (grad_y + noise[1])
+    return x, y`,
+
+      momentum: `# Momentum Optimizer
+def momentum_step(x, y, velocity, lr=${config.learningRate}, momentum=${config.momentum}):
+    grad_x, grad_y = compute_gradient(x, y)
+    
+    velocity_x = momentum * velocity_x - lr * grad_x
+    velocity_y = momentum * velocity_y - lr * grad_y
+    
+    x += velocity_x
+    y += velocity_y
+    return x, y`,
+
       adam: `# Adam Optimizer
-def adam_step(x, y, m, v, t, lr=${config.learningRate}, beta1=${config.beta1}, beta2=${config.beta2}):
+def adam_step(x, y, m, v, t, lr=${config.learningRate}, beta1=${config.beta1 || 0.9}, beta2=${config.beta2 || 0.999}):
     grad_x, grad_y = compute_gradient(x, y)
     
     m_x = beta1 * m_x + (1 - beta1) * grad_x
@@ -378,12 +368,32 @@ def adam_step(x, y, m, v, t, lr=${config.learningRate}, beta1=${config.beta1}, b
     v_hat_x = v_x / (1 - beta2**t)
     v_hat_y = v_y / (1 - beta2**t)
     
-    x -= lr * m_hat_x / (sqrt(v_hat_x) + 1e-8)
-    y -= lr * m_hat_y / (sqrt(v_hat_y) + 1e-8)
-    
-    return x, y, m, v`,
-    }
+    x -= lr * m_hat_x / (np.sqrt(v_hat_x) + 1e-8)
+    y -= lr * m_hat_y / (np.sqrt(v_hat_y) + 1e-8)
+    return x, y`,
 
+      rmsprop: `# RMSprop Optimizer
+def rmsprop_step(x, y, g, lr=${config.learningRate}, beta=${config.momentum || 0.9}):
+    grad_x, grad_y = compute_gradient(x, y)
+    
+    g_x = beta * g_x + (1 - beta) * grad_x**2
+    g_y = beta * g_y + (1 - beta) * grad_y**2
+    
+    x -= lr * grad_x / (np.sqrt(g_x) + 1e-8)
+    y -= lr * grad_y / (np.sqrt(g_y) + 1e-8)
+    return x, y`,
+
+      adagrad: `# AdaGrad Optimizer
+def adagrad_step(x, y, g, lr=${config.learningRate}):
+    grad_x, grad_y = compute_gradient(x, y)
+    
+    g_x += grad_x**2
+    g_y += grad_y**2
+    
+    x -= lr * grad_x / (np.sqrt(g_x) + 1e-8)
+    y -= lr * grad_y / (np.sqrt(g_y) + 1e-8)
+    return x, y`,
+    }
     return optimizerCode[selectedOptimizer as keyof typeof optimizerCode] || optimizerCode.gd
   }
 
@@ -398,7 +408,6 @@ def adam_step(x, y, m, v, t, lr=${config.learningRate}, beta1=${config.beta1}, b
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Controls */}
           <Card className="lg:col-span-1">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -530,6 +539,36 @@ def adam_step(x, y, m, v, t, lr=${config.learningRate}, beta1=${config.beta1}, b
                 </>
               )}
 
+              {selectedOptimizer === "rmsprop" && (
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <label className="text-sm font-medium">Beta (Decay Rate)</label>
+                    <Input 
+                      type="number" 
+                      className="w-20 h-8 text-xs"
+                      step="0.01"
+                      value={config.momentum || 0.9}
+                      onChange={(e) => setConfig(prev => ({ ...prev, momentum: parseFloat(e.target.value) || 0 }))}
+                    />
+                  </div>
+                  <Slider
+                    value={[config.momentum || 0.9]}
+                    onValueChange={([value]) => setConfig((prev) => ({ ...prev, momentum: value }))}
+                    min={0}
+                    max={0.99}
+                    step={0.01}
+                  />
+                </div>
+              )}
+
+              {selectedOptimizer === "adagrad" && (
+                <div className="bg-muted/50 p-3 rounded-md">
+                  <p className="text-xs text-muted-foreground">
+                    AdaGrad has no extra hyperparameters besides learning rate. It accumulates square gradients automatically.
+                  </p>
+                </div>
+              )}
+
               <div className="flex gap-2">
                 <Button onClick={toggleAnimation} className="flex-1">
                   {isRunning ? <Pause className="w-4 h-4 mr-2" /> : <Play className="w-4 h-4 mr-2" />}
@@ -559,7 +598,6 @@ def adam_step(x, y, m, v, t, lr=${config.learningRate}, beta1=${config.beta1}, b
             </CardContent>
           </Card>
 
-          {/* Visualization */}
           <Card className="lg:col-span-2">
             <CardHeader>
               <CardTitle>Optimization Visualization</CardTitle>

@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button"
 import { Github, Play } from "lucide-react"
-import { ModeToggle } from "@/components/mode-toggle"
+import { ModeToggle } from "@/components/layout/mode-toggle"
 import Link from "next/link"
 
 export function Header() {

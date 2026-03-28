@@ -1,10 +1,10 @@
-import { Header } from "@/components/header"
-import { HeroSection } from "@/components/hero-section"
-import { OptimizerGrid } from "@/components/optimizer-grid"
-import { InteractivePlayground } from "@/components/interactive-playground"
-import { AdvancedMetrics } from "@/components/advanced-metrics"
-import { AnalysisSection } from "@/components/analysis-section"
-import { Footer } from "@/components/footer"
+import { Header } from "@/components/layout/header"
+import { HeroSection } from "@/components/marketing/hero-section"
+import { OptimizerGrid } from "@/components/optimizers/optimizer-grid"
+import { InteractivePlayground } from "@/components/playground/interactive-playground"
+import { AdvancedMetrics } from "@/components/analysis/advanced-metrics"
+import { AnalysisSection } from "@/components/analysis/analysis-section"
+import { Footer } from "@/components/layout/footer"
 
 export default function HomePage() {
   return (

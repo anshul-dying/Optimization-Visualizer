@@ -4,8 +4,8 @@ import matter from "gray-matter"
 import ReactMarkdown from "react-markdown"
 import { notFound } from "next/navigation"
 import { cn } from "@/lib/utils"
-import { Mermaid } from "@/components/mermaid"
-import { TOC } from "@/components/toc"
+import { Mermaid } from "@/components/docs/mermaid"
+import { TOC } from "@/components/docs/toc"
 
 interface PageProps {
   params: {
