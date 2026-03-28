@@ -62,7 +62,7 @@ export function AnalysisSection() {
               </CardHeader>
               <CardContent>
                 <div className="h-80">
-                  <ResponsiveContainer width="100%" height="100%">
+                  <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                     <LineChart data={convergenceData}>
                       <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                       <XAxis dataKey="iteration" stroke="var(--muted-foreground)" />
@@ -126,7 +126,7 @@ export function AnalysisSection() {
               </CardHeader>
               <CardContent>
                 <div className="h-96">
-                  <ResponsiveContainer width="100%" height="100%">
+                  <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                     <BarChart data={performanceData}>
                       <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                       <XAxis dataKey="metric" stroke="var(--muted-foreground)" />
