@@ -49,11 +49,12 @@ class DecisionTree:
 
         return best_feature, best_threshold
 
-    def _build_tree(self, X, y, depth=0):
+    def _build_tree(self, X, y, depth=0, max_depth_override=None):
+        effective_max_depth = max_depth_override if max_depth_override is not None else self.max_depth
         m, n = X.shape
         num_labels = len(np.unique(y))
 
-        if depth >= self.max_depth or num_labels == 1 or m < self.min_samples_split:
+        if depth >= effective_max_depth or num_labels == 1 or m < self.min_samples_split:
             leaf_value = np.round(np.mean(y)) if m > 0 else 0
             return self.Node(value=leaf_value)
 
@@ -64,21 +65,40 @@ class DecisionTree:
 
         left_idx = X[:, feature] <= threshold
         right_idx = X[:, feature] > threshold
-        left = self._build_tree(X[left_idx], y[left_idx], depth + 1)
-        right = self._build_tree(X[right_idx], y[right_idx], depth + 1)
+        left = self._build_tree(X[left_idx], y[left_idx], depth + 1, max_depth_override)
+        right = self._build_tree(X[right_idx], y[right_idx], depth + 1, max_depth_override)
 
         return self.Node(feature, threshold, left, right)
 
-    def fit(self, X, y):
-        self.root = self._build_tree(X, y)
-        # Decision trees don't have "epochs" but we can simulate progress
-        y_pred = self.predict(X)
-        accuracy = np.mean(y_pred == y)
-        self.history.append({
-            "epoch": 1,
-            "loss": 0, # Loss is not traditionally used for DT in training loop
-            "accuracy": float(accuracy)
-        })
+    def fit(self, X, y, grid_X=None):
+        if grid_X is not None:
+            # Animate progressive tree building: depth 1, 2, 3, ..., max_depth
+            actual_max_depth = min(self.max_depth, 10)
+            for depth in range(1, actual_max_depth + 1):
+                temp_root = self._build_tree(X, y, max_depth_override=depth)
+                y_pred_data = np.array([self._predict_one(x, temp_root) for x in X])
+                accuracy = np.mean(y_pred_data == y)
+                gini = self._gini(y) - accuracy  # approximate impurity decrease
+
+                entry = {
+                    "epoch": depth,
+                    "loss": float(max(0, 1.0 - accuracy)),
+                    "accuracy": float(accuracy),
+                    "boundary": [int(self._predict_one(x, temp_root)) for x in grid_X]
+                }
+                self.history.append(entry)
+
+            # Set the actual root to full depth
+            self.root = self._build_tree(X, y)
+        else:
+            self.root = self._build_tree(X, y)
+            y_pred = self.predict(X)
+            accuracy = np.mean(y_pred == y)
+            self.history.append({
+                "epoch": 1,
+                "loss": 0,
+                "accuracy": float(accuracy)
+            })
         return self.history
 
     def _predict_one(self, x, node):

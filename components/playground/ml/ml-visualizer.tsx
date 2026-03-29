@@ -80,7 +80,11 @@ export function MLVisualizer({ canvasRef, config, isTraining, apiStatus, dataPoi
                   <p className="text-sm text-muted-foreground leading-relaxed">
                     {config.algorithm === 'linear' ? 'Minimize Mean Squared Error (MSE) using Gradient Descent.' : 
                      config.algorithm === 'logistic' ? 'Minimize Binary Cross-Entropy (Log-Loss) using Iterative Weight Updates.' :
-                     config.algorithm === 'svm' ? 'Maximize the margin between classes while minimizing hinge loss (Quadratic Programming).' :
+                     config.algorithm === 'svm' || config.algorithm === 'kernel_svm' ? 'Maximize the margin between classes while minimizing hinge loss via SMO (Sequential Minimal Optimization).' :
+                     config.algorithm === 'neural_network' ? 'Minimize Binary Cross-Entropy via Forward/Backward Propagation with gradient-based weight updates.' :
+                     config.algorithm === 'decision_tree' ? 'Minimize Gini Impurity by recursively splitting the feature space using a greedy top-down approach.' :
+                     config.algorithm === 'random_forest' ? 'Aggregate multiple Decision Trees (bagging) to reduce variance and improve classification robustness.' :
+                     config.algorithm === 'gradient_boosting' ? 'Iteratively fit Decision Trees to residuals, minimizing log-loss via functional gradient descent.' :
                      'Global Optimization of an objective function via iterative step-wise improvements.'}
                   </p>
                 </div>
@@ -91,11 +95,11 @@ export function MLVisualizer({ canvasRef, config, isTraining, apiStatus, dataPoi
                   <ul className="text-sm space-y-2 text-muted-foreground">
                     <li className="flex items-start gap-2">
                       <div className="w-1.5 h-1.5 rounded-full bg-primary mt-2" />
-                      <span><strong>Initialization:</strong> Weight vectors set to {config.algorithm === 'neural_network' ? 'He/Xavier distribution' : 'zero or random'}.</span>
+                      <span><strong>Initialization:</strong> {config.algorithm === 'neural_network' ? 'Weight matrices initialized using He/Xavier distribution.' : config.algorithm === 'decision_tree' ? 'Root node created with full dataset.' : config.algorithm === 'random_forest' ? 'Bootstrap samples generated for each tree.' : config.algorithm === 'gradient_boosting' ? 'Initial prediction set to log-odds of the mean.' : config.algorithm === 'svm' || config.algorithm === 'kernel_svm' ? 'Lagrange multipliers (α) initialized to zero.' : 'Weight vectors set to zero.'}</span>
                     </li>
                     <li className="flex items-start gap-2">
                       <div className="w-1.5 h-1.5 rounded-full bg-primary mt-2" />
-                      <span><strong>Iteration:</strong> {config.epochs} epochs of {config.algorithm === 'gradient_boosting' ? 'residual fitting' : 'gradient computation'}.</span>
+                      <span><strong>Iteration:</strong> {config.algorithm === 'decision_tree' ? 'Recursive splits until max depth or pure leaves.' : config.algorithm === 'random_forest' ? `${config.epochs} trees built with bootstrap aggregation.` : config.algorithm === 'gradient_boosting' ? `${config.epochs} rounds of residual fitting with shrinkage.` : config.algorithm === 'svm' || config.algorithm === 'kernel_svm' ? `${config.epochs} iterations of SMO dual coefficient updates.` : `${config.epochs} epochs of gradient computation and weight updates.`}</span>
                     </li>
                   </ul>
                 </div>

@@ -11,7 +11,7 @@ export const algorithms = {
 
 export const kernelTypes = {
   linear: "Linear",
-  polynomial: "Polynomial",
+  poly: "Polynomial",
   rbf: "RBF (Gaussian)",
   sigmoid: "Sigmoid",
 }
