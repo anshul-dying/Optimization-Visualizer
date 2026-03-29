@@ -79,7 +79,7 @@ export function Footer() {
               <a href="#" target="_blank" className="text-muted-foreground hover:text-foreground transition-colors">
                 <BookOpen className="w-5 h-5" />
               </a>
-              <a href="mailto:anshulkhaire3303dll@gmail.com" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-foreground transition-colors">
+              <a href="mailto:aakhaire12@gmail.com" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-foreground transition-colors">
                 <Mail className="w-5 h-5" />
               </a>
             </div>

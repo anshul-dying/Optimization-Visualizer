@@ -35,10 +35,12 @@ export function Header() {
 
           <div className="flex items-center gap-2">
             <ModeToggle />
-            <Button variant="ghost" size="sm" className="hidden sm:flex">
-              <Github className="w-4 h-4 mr-2" />
-              GitHub
-            </Button>
+            <a href="https://github.com/anshul-dying/Optimization-Visualizer" target="_blank" rel="noopener noreferrer">
+              <Button variant="ghost" size="sm" className="hidden sm:flex">
+                <Github className="w-4 h-4 mr-2" />
+                GitHub
+              </Button>
+            </a>
             <Button size="sm" className="bg-primary hover:bg-primary/90">
               <Play className="w-4 h-4 mr-2" />
               Get Started
