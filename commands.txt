@@ -1,0 +1,61 @@
+============================================
+  ML Optimizer Visualizer - How to Run
+============================================
+
+PREREQUISITES:
+  - Node.js (v18+)
+  - Python (3.8+)
+  - npm or pnpm
+
+============================================
+STEP 1: Install Frontend Dependencies
+============================================
+  npm install --legacy-peer-deps
+  npm install react-is --legacy-peer-deps
+  (or: pnpm install)
+
+============================================
+STEP 2: Install Backend Dependencies
+============================================
+  pip install -r requirements.txt
+
+============================================
+STEP 3: Start the Backend (Python FastAPI)
+============================================
+  python -m core.api
+
+  → Runs on http://localhost:8000
+
+============================================
+STEP 4: Start the Frontend (Next.js)
+============================================
+  (Open a NEW terminal)
+
+  npm run dev
+  (or: pnpm dev)
+
+  → Runs on http://localhost:3000
+
+============================================
+STEP 5: Open in Browser
+============================================
+  http://localhost:3000/playground
+
+============================================
+OPTIONAL: Environment Variables
+============================================
+  Create a .env.local file with:
+
+  NEXT_PUBLIC_SERVER_URL=http://localhost:8000
+
+  (Defaults to localhost:8000 if not set)
+
+============================================
+QUICK START (All Commands in Order)
+============================================
+  npm install --legacy-peer-deps
+  npm install react-is --legacy-peer-deps
+  pip install -r requirements.txt
+  python -m core.api          (Terminal 1)
+  npm run dev                 (Terminal 2)
+  Open: http://localhost:3000/playground

@@ -13,45 +13,45 @@ class GradientBoosting:
     def _sigmoid(self, x):
         return 1 / (1 + np.exp(-np.clip(x, -250, 250)))
 
-    def fit(self, X, y):
+    def fit(self, X, y, grid_X=None):
         m = len(y)
-        # Initial prediction (log-odds)
         p = np.mean(y)
         self.base_pred = np.log(p / (1 - p)) if 0 < p < 1 else 0.0
         
         f = np.full(m, self.base_pred)
 
         for i in range(self.n_estimators):
-            # Gradient (residuals) for binary cross-entropy
-            # p = sigmoid(f), residual = y - p
             p_current = self._sigmoid(f)
             residuals = y - p_current
             
-            # Fit a decision tree to residuals (using DT as a regressor here)
-            # Since my DT is simple, it works mostly for classification, 
-            # but we can use it to fit residuals by taking the mean of y in leaves.
             tree = DecisionTree(max_depth=self.max_depth)
             tree.fit(X, residuals)
             self.trees.append(tree)
             
-            # Update f
-            f += self.learning_rate * tree.predict(X)
+            tree_preds = np.array(tree.predict(X), dtype=float)
+            f += self.learning_rate * tree_preds
             
-            # Metrics
             y_pred = (self._sigmoid(f) > 0.5).astype(int)
             accuracy = np.mean(y_pred == y)
-            loss = -np.mean(y * np.log(p_current + 1e-15) + (1 - y) * np.log(1 - p_current + 1e-15))
+            loss = -np.mean(y * np.log(self._sigmoid(f) + 1e-15) + (1 - y) * np.log(1 - self._sigmoid(f) + 1e-15))
             
-            self.history.append({
+            entry = {
                 "epoch": i + 1,
                 "loss": float(loss),
                 "accuracy": float(accuracy)
-            })
+            }
+
+            # Boundary snapshot after each boosting round
+            if grid_X is not None:
+                entry["boundary"] = self.predict(grid_X)
+
+            self.history.append(entry)
 
         return self.history
 
     def predict(self, X):
         f = np.full(len(X), self.base_pred)
         for tree in self.trees:
-            f += self.learning_rate * tree.predict(X)
+            tree_preds = np.array(tree.predict(X), dtype=float)
+            f += self.learning_rate * tree_preds
         return (self._sigmoid(f) > 0.5).astype(int).tolist()

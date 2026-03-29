@@ -9,10 +9,9 @@ class RandomForest:
         self.trees = []
         self.history = []
 
-    def fit(self, X, y):
+    def fit(self, X, y, grid_X=None):
         m, n = X.shape
         for i in range(self.n_estimators):
-            # Bootstrap sample
             idx = np.random.choice(m, m, replace=True)
             X_sample, y_sample = X[idx], y[idx]
             
@@ -20,19 +19,24 @@ class RandomForest:
             tree.fit(X_sample, y_sample)
             self.trees.append(tree)
 
-            # Record accuracy progress
             y_pred = self.predict(X)
             accuracy = np.mean(y_pred == y)
-            self.history.append({
+
+            entry = {
                 "epoch": i + 1,
-                "loss": 0,
+                "loss": float(max(0, 1.0 - accuracy)),
                 "accuracy": float(accuracy)
-            })
+            }
+
+            # Boundary snapshot after each tree is added
+            if grid_X is not None:
+                entry["boundary"] = self.predict(grid_X)
+
+            self.history.append(entry)
             
         return self.history
 
     def predict(self, X):
         if not self.trees: return [0] * len(X)
         tree_preds = np.array([tree.predict(X) for tree in self.trees])
-        # Majority vote
         return np.round(np.mean(tree_preds, axis=0)).astype(int).tolist()
